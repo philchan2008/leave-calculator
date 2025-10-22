@@ -1,0 +1,6 @@
+{
+  "css": [
+    "https://cdn.jsdelivr.net/npm/@vuetify/nightly@3.10.5-next.2025-10-22/dist/vuetify-labs.css",
+    "https://cdn.jsdelivr.net/npm/@mdi/font@7.x/css/materialdesignicons.min.css"
+  ]
+}

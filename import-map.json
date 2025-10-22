@@ -1,0 +1,7 @@
+{
+  "imports": {
+    "vue": "https://cdn.jsdelivr.net/npm/@vue/runtime-dom@3.5.22/dist/runtime-dom.esm-browser.js",
+    "vuetify": "https://cdn.jsdelivr.net/npm/@vuetify/nightly@3.10.5-next.2025-10-22/dist/vuetify-labs.esm.js",
+    "vue/server-renderer": "https://cdn.jsdelivr.net/npm/@vue/server-renderer@3.5.22/dist/server-renderer.esm-browser.js"
+  }
+}
