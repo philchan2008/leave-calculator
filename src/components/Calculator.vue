@@ -190,255 +190,236 @@
       </v-card>
     </template>
   </v-dialog>
+  <v-dialog v-model="showHolidayList" max-width="800px">
+    <HolidayList />
+  </v-dialog>
 </template>
 
 <script setup>
-  import { computed, ref, shallowRef, watch } from 'vue'
+import { computed, ref, shallowRef, watch } from 'vue'
+import { formatToNumeric10_2 } from '@/utils/leaveUtils'
+import axios from 'axios'
+import HolidayList from './HolidayList.vue'
 
-  const showModal = ref(false)
-  const msg = ref({
-    title: '',
-    text: ''
+const showModal = ref(false)
+const showHolidayList = ref(false)
+const msg = ref({
+  title: '',
+  text: ''
+})
+
+const rules = {
+  required: (v) => !!v || 'This field is required',
+}
+
+const formRef = ref()
+const isFormValid = ref(false)
+
+// const form = ref({
+//   termType: null,
+//   pensionType: null,
+//   earningRate: 0,
+//   accuLimit: 0,
+//   lastBal: 0,
+//   lastBalDate: null,
+//   lastBalSession: null,
+//   openingBal: 0,
+//   closingBal: 0,
+//   leaveStartDate: null,
+//   leaveResumeDate: null,
+//   daysTaken: 0,
+//   leaveStartSession: null,
+//   leaveResumeSession: null
+// })
+
+const form = ref({
+  termType: "New",
+  pensionType: "NA",
+  earningRate: 26,
+  accuLimit: 180,
+  lastBal: 10,
+  lastBalDate: "2025-01-01",
+  lastBalSession: "am",
+  openingBal: 0,
+  closingBal: 0,
+  leaveStartDate: "2025-01-01",
+  leaveResumeDate: "2025-01-01",
+  daysTaken: 0.5,
+  leaveStartSession: "am",
+  leaveResumeSession: "pm"
+})
+
+const earningDaysBeforeLeave = computed(() => {
+  if (!form.value.lastBalDate || !form.value.lastBalSession
+    || !form.value.leaveStartDate || !form.value.leaveStartSession
+  ) return 0
+  const startSess = form.value.lastBalSession
+  const endSess = form.value.leaveStartSession
+  const start = new Date(form.value.lastBalDate)
+  const end = new Date(form.value.leaveStartDate)
+  const daysDiff = Math.ceil( (end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24))
+  const earningDays = daysDiff +
+    ((startSess == 'am' && endSess == 'pm') ? 0.5 : 0) +
+    ((startSess == 'pm' && endSess == 'am') ? -0.5 : 0)
+  return earningDays
+})
+
+const earningDays = computed(() => {
+  if (!form.value.leaveStartDate || !form.value.leaveStartSession
+    || !form.value.leaveResumeDate || !form.value.leaveResumeSession
+  ) return 0
+  const startSess = form.value.leaveStartSession
+  const endSess = form.value.leaveResumeSession
+  const start = new Date(form.value.leaveStartDate)
+  const end = new Date(form.value.leaveResumeDate)
+  const daysDiff = Math.ceil( (end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24))
+  const earningDays = daysDiff +
+    ((startSess == 'am' && endSess == 'pm') ? 0.5 : 0) +
+    ((startSess == 'pm' && endSess == 'am') ? -0.5 : 0)
+  return earningDays
+})
+
+const earningRateNew = [26, 22, 18, 14]
+const earningLimitNew = { 26: 78, 22: 66, 18: 54, 14: 28}
+const earningRateCommon = [34, 27, 21, 14]
+const earningLimitCommon = { 34: 102, 27: 81, 21: 63, 14: 28 }
+const earningRateLocal = [49.5, 40.5, 37, 31, 22, 12.5]
+const earningLimitLocal = { 49.5: 180, 40.5: 180, 37: 120, 31: 120, 22: 100, 14: 50 }
+const earningRateContract = [28, 14]
+const earningLimitContract = { 28: 28, 14: 14 }
+
+const earningLimitOptions = computed(() => {
+  const allValues = [
+    ...Object.values(earningLimitNew),
+    ...Object.values(earningLimitCommon),
+    ...Object.values(earningLimitLocal),
+    ...Object.values(earningLimitContract)
+  ]
+
+  const uniqueSortedValues = [...new Set(allValues)].sort((b, a) => {
+    // Numeric sort if values are numbers
+    if (typeof a === 'number' && typeof b === 'number') return a - b
+
+    // Lexical sort for strings
+    return String(a).localeCompare(String(b))
   })
 
-  const rules = {
-    required: (v) => !!v || 'This field is required',
+  return uniqueSortedValues
+
+  //FIXME: This part have deadloop in the program, it needs to fix it later.
+  //TODO: Lookup the earning limit base on selected earning rate.
+  // if (!form.value.termType) {
+  //   return allValues
+  // } else {
+  //   switch (form.value.termType) {
+  //     case 'New':
+  //       return earningLimitNew[form.value.earningRate]
+  //     case 'Common':
+  //       return earningLimitCommon[form.value.earningRate]
+  //     case 'Local':
+  //       return earningLimitLocal[form.value.earningRate]
+  //     case 'Contract':
+  //       return earningLimitContract[form.value.earningRate]
+  //     default:
+  //       return allValues
+  //   }
+  //}
+})
+
+const earningRateOptions = computed(() => {
+  switch (form.value.termType) {
+    case 'New':
+      return earningRateNew
+    case 'Common':
+      return earningRateCommon
+    case 'Local':
+      return earningRateLocal
+    case 'Contract':
+      return earningRateContract
+    default:
+      return earningRateNew
   }
+})
 
-  const formRef = ref()
-  const isFormValid = ref(false)
+function showMsg(title, text) {
+  msg.value.title = title
+  msg.value.text = text
+  showModal.value = true
+}
 
-  // const form = ref({
-  //   termType: null,
-  //   pensionType: null,
-  //   earningRate: 0,
-  //   accuLimit: 0,
-  //   lastBal: 0,
-  //   lastBalDate: null,
-  //   lastBalSession: null,
-  //   openingBal: 0,
-  //   closingBal: 0,
-  //   leaveStartDate: null,
-  //   leaveResumeDate: null,
-  //   daysTaken: 0,
-  //   leaveStartSession: null,
-  //   leaveResumeSession: null
-  // })
+async function listHolidays() {
+  showHolidayList.value = true;
+}
 
-  const form = ref({
-    termType: "New",
-    pensionType: "NA",
-    earningRate: 26,
-    accuLimit: 180,
-    lastBal: 10,
-    lastBalDate: "2025-01-01",
-    lastBalSession: "am",
-    openingBal: 0,
-    closingBal: 0,
-    leaveStartDate: "2025-01-01",
-    leaveResumeDate: "2025-01-01",
-    daysTaken: 0.5,
-    leaveStartSession: "am",
-    leaveResumeSession: "pm"
-  })
-
-  const earningDaysBeforeLeave = computed(() => {
-    if (!form.value.lastBalDate || !form.value.lastBalSession
-      || !form.value.leaveStartDate || !form.value.leaveStartSession
-    ) return 0
-    const startSess = form.value.lastBalSession
-    const endSess = form.value.leaveStartSession
-    const start = new Date(form.value.lastBalDate)
-    const end = new Date(form.value.leaveStartDate)
-    const daysDiff = Math.ceil( (end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24))
-    const earningDays = daysDiff +
-      ((startSess == 'am' && endSess == 'pm') ? 0.5 : 0) +
-      ((startSess == 'pm' && endSess == 'am') ? -0.5 : 0)
-    return earningDays
-  })
-
-  const earningDays = computed(() => {
-    if (!form.value.leaveStartDate || !form.value.leaveStartSession
-      || !form.value.leaveResumeDate || !form.value.leaveResumeSession
-    ) return 0
-    const startSess = form.value.leaveStartSession
-    const endSess = form.value.leaveResumeSession
-    const start = new Date(form.value.leaveStartDate)
-    const end = new Date(form.value.leaveResumeDate)
-    const daysDiff = Math.ceil( (end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24))
-    const earningDays = daysDiff +
-      ((startSess == 'am' && endSess == 'pm') ? 0.5 : 0) +
-      ((startSess == 'pm' && endSess == 'am') ? -0.5 : 0)
-    return earningDays
-  })
-
-  const earningRateNew = [26, 22, 18, 14]
-  const earningLimitNew = { 26: 78, 22: 66, 18: 54, 14: 28}
-  const earningRateCommon = [34, 27, 21, 14]
-  const earningLimitCommon = { 34: 102, 27: 81, 21: 63, 14: 28 }
-  const earningRateLocal = [49.5, 40.5, 37, 31, 22, 12.5]
-  const earningLimitLocal = { 49.5: 180, 40.5: 180, 37: 120, 31: 120, 22: 100, 14: 50 }
-  const earningRateContract = [28, 14]
-  const earningLimitContract = { 28: 28, 14: 14 }
-
-  const earningLimitOptions = computed(() => {
-    const allValues = [
-      ...Object.values(earningLimitNew),
-      ...Object.values(earningLimitCommon),
-      ...Object.values(earningLimitLocal),
-      ...Object.values(earningLimitContract)
-    ]
-
-    const uniqueSortedValues = [...new Set(allValues)].sort((b, a) => {
-      // Numeric sort if values are numbers
-      if (typeof a === 'number' && typeof b === 'number') return a - b
-
-      // Lexical sort for strings
-      return String(a).localeCompare(String(b))
-    })
-
-    return uniqueSortedValues
-
-    //FIXME: This part have deadloop in the program, it needs to fix it later.
-    //TODO: Lookup the earning limit base on selected earning rate.
-    // if (!form.value.termType) {
-    //   return allValues
-    // } else {
-    //   switch (form.value.termType) {
-    //     case 'New':
-    //       return earningLimitNew[form.value.earningRate]
-    //     case 'Common':
-    //       return earningLimitCommon[form.value.earningRate]
-    //     case 'Local':
-    //       return earningLimitLocal[form.value.earningRate]
-    //     case 'Contract':
-    //       return earningLimitContract[form.value.earningRate]
-    //     default:
-    //       return allValues
-    //   }
-    //}
-  })
-
-  const earningRateOptions = computed(() => {
-    switch (form.value.termType) {
-      case 'New':
-        return earningRateNew
-      case 'Common':
-        return earningRateCommon
-      case 'Local':
-        return earningRateLocal
-      case 'Contract':
-        return earningRateContract
-      default:
-        return earningRateNew
-    }
-  })
-
-  function showMsg(title, text) {
-    msg.value.title = title
-    msg.value.text = text
-    showModal.value = true
-  }
-
-  async function listHolidays() {
-    fetch("http://localhost:3001/holidays")
-      .then(response => {
-        if (!response.ok) {
-          throw new Error("Network response was not ok")
-        }
-        const data = response.json()
-        // Assume `data` is the parsed JSON from the URL
-        const holidays = data.vcalendar[0].vevent.map(event => ({
-          date: event.dtstart[0],       // Format: YYYYMMDD
-          name: event.summary           // Holiday name
-        }));
-
-        console.log(holidays);
-      })
-  }
-
-  function resetForm() {
-    for (const key in form.value) {
-      if (key !== "termType" && key !== "pensionType" && key !== "earningRate") {
-        if (typeof form.value[key] === 'number') {
-          form.value[key] = 0
-        } else {
-          form.value[key] = null
-        }
+function resetForm() {
+  for (const key in form.value) {
+    if (key !== "termType" && key !== "pensionType" && key !== "earningRate") {
+      if (typeof form.value[key] === 'number') {
+        form.value[key] = 0
+      } else {
+        form.value[key] = null
       }
     }
   }
+}
 
-  function formatToNumeric10_2(value) {
-    const num = Number.parseFloat(value)
-    if (Number.isNaN(num)) return null
 
-    const [intPart, decPart = ''] = num.toFixed(2).split('.')
-    if (intPart.length > 8) return null // 10 digits total minus 2 decimals
-    return `${intPart}.${decPart}`
+function submitFrom() {
+  const { leaveStartDate, leaveResumeDate, leaveStartSession, leaveResumeSession, openingBal, closingBal, lastBal, earningRate, termType, daysTaken
+  } = form.value
+  const earnedLeaveBeforeLeave = earningDaysBeforeLeave.value * earningRate / 365
+  form.value.openingBal = Math.min(formatToNumeric10_2(lastBal + earnedLeaveBeforeLeave), form.value.accuLimit)
+  const earnedLeave = earningDays.value * earningRate / 365
+  form.value.closingBal = Math.min(formatToNumeric10_2(form.value.openingBal - daysTaken + earnedLeave), form.value.accuLimit)
+}
+
+function continueFrom() {
+  //alert('To be implemented')
+  showMsg('Info', 'To be implemented.')
+}
+
+function validateLeaveDates() {
+  const { termType,
+    lastBalDate, lastBalSession,
+    leaveStartDate, leaveStartSession,
+    leaveResumeDate, leaveResumeSession,
+    daysTaken } = form.value
+
+  if (!leaveStartDate || !leaveStartSession
+    || !leaveResumeDate || !leaveResumeSession
+    || !lastBalDate || !lastBalSession
+  ) return true // Skip if incomplete
+
+  const start = new Date(lastBalDate)
+  const end = new Date(leaveStartDate)
+  const resume = new Date(leaveResumeDate)
+
+  if (start > end) {
+    return 'Last balance date must be before leave start date'
   }
 
-  function submitFrom() {
-    const { leaveStartDate, leaveResumeDate, leaveStartSession, leaveResumeSession, openingBal, closingBal, lastBal, earningRate, termType, daysTaken
-    } = form.value
-    const earnedLeaveBeforeLeave = earningDaysBeforeLeave.value * earningRate / 365
-    form.value.openingBal = Math.min(formatToNumeric10_2(lastBal + earnedLeaveBeforeLeave), form.value.accuLimit)
-    const earnedLeave = earningDays.value * earningRate / 365
-    form.value.closingBal = Math.min(formatToNumeric10_2(form.value.openingBal - daysTaken + earnedLeave), form.value.accuLimit)
+  if (resume < end) {
+    return 'Resumption date must be after leave start date'
   }
 
-  function continueFrom() {
-    //alert('To be implemented')
-    showMsg('Info', 'To be implemented.')
-  }
-
-  function calcDayDiff(startDate, startSession, endDate, endSession) {
-    const dayDiff = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24)) +
-      ((startSession === 'am' && endSession === 'pm') ? 0.5: 0)
-  }
-
-  function validateLeaveDates() {
-    const { termType,
-      lastBalDate, lastBalSession,
-      leaveStartDate, leaveStartSession,
-      leaveResumeDate, leaveResumeSession,
-      daysTaken } = form.value
-
-    if (!leaveStartDate || !leaveStartSession
-      || !leaveResumeDate || !leaveResumeSession
-      || !lastBalDate || !lastBalSession
-    ) return true // Skip if incomplete
-
-    const start = new Date(lastBalDate)
-    const end = new Date(leaveStartDate)
-    const resume = new Date(leaveResumeDate)
-
-    if (start > end) {
-      return 'Last balance date must be before leave start date'
+  if (start.getTime() === end.getTime()) {
+    if (lastBalDate == 'pm' && leaveStartSession == 'am') {
+      return 'If last balance and leave start dates are the same, session must be from AM to PM'
     }
-
-    if (resume < end) {
-      return 'Resumption date must be after leave start date'
-    }
-
-    if (start.getTime() === end.getTime()) {
-      if (lastBalDate == 'pm' && leaveStartSession == 'am') {
-        return 'If last balance and leave start dates are the same, session must be from AM to PM'
-      }
-    }
-
-    if (end.getTime() === resume.getTime()) {
-      if (leaveStartSession == 'pm' && leaveResumeSession == 'am') {
-        return 'If leave start and resumption dates are the same, session must be from AM to PM'
-      }
-    }
-
-    //TODO: Add the following checkings later:-
-    // 1. contract terms days diff <= days taken,
-    // 2. end date to resume duty should not longer than then duty pattern max length
-
-    return true
   }
+
+  if (end.getTime() === resume.getTime()) {
+    if (leaveStartSession == 'pm' && leaveResumeSession == 'am') {
+      return 'If leave start and resumption dates are the same, session must be from AM to PM'
+    }
+  }
+
+  //TODO: Add the following checkings later:-
+  // 1. contract terms days diff <= days taken,
+  // 2. end date to resume duty should not longer than then duty pattern max length
+
+  return true
+}
 
 </script>
 
