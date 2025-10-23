@@ -1,79 +1,56 @@
-# Vuetify (Default)
+# 🗓️ Leave Calculator – Vue 3.5 + Vuetify + Electron
 
-This is the official scaffolding tool for Vuetify, designed to give you a head start in building your new Vuetify application. It sets up a base template with all the necessary configurations and standard directory structure, enabling you to begin development without the hassle of setting up the project from scratch.
+A modern, standalone leave calculator application built with Vue 3.5 and Vuetify UI framework. This project is a refactored version of a legacy Visual Basic leave management module, designed to run as a desktop application via Electron for Windows.
 
-## ❗️ Important Links
+# 🏗️ Project Background
 
-- 📄 [Docs](https://vuetifyjs.com/)
-- 🚨 [Issues](https://issues.vuetifyjs.com/)
-- 🏬 [Store](https://store.vuetifyjs.com/)
-- 🎮 [Playground](https://play.vuetifyjs.com/)
-- 💬 [Discord](https://community.vuetifyjs.com)
+Originally part of an online leave management system, this calculator was extracted from a legacy VB program and rebuilt using Vue 3.5. It preserves the original business logic while offering a modern UI and improved user experience. The app is designed to operate independently and will be packaged as a Windows desktop application using Electron.
 
-## 💿 Install
+# 🚀 Features
 
-Set up your project using your preferred package manager. Use the corresponding command to install the dependencies:
+    🧮 Accurate leave balance computation based on legacy rules
+    📅 Vuetify-powered calendar and form components
+    🗂️ Support for multiple leave types (annual, sick, etc.)
+    🖥️ Electron-ready for Windows desktop deployment (TBC)
 
-| Package Manager                                                | Command        |
-|---------------------------------------------------------------|----------------|
-| [yarn](https://yarnpkg.com/getting-started)                   | `yarn install` |
-| [npm](https://docs.npmjs.com/cli/v7/commands/npm-install)     | `npm install`  |
-| [pnpm](https://pnpm.io/installation)                          | `pnpm install` |
-| [bun](https://bun.sh/#getting-started)                        | `bun install`  |
+# 🛠️ Tech Stack
+| Layer |	Technology |
+|---|---|
+| Frontend | Vue 3.5, Vuetify 3, Pinia
+| Styling | Vuetify, SCSS |
+| Desktop | Electron (planned) |
+| Testing | Vitest, Vue Test Utils |
+| Build Tool |	Vite |
 
-After completing the installation, your environment is ready for Vuetify development.
-
-## ✨ Features
-
-- 🖼️ **Optimized Front-End Stack**: Leverage the latest Vue 3 and Vuetify 3 for a modern, reactive UI development experience. [Vue 3](https://v3.vuejs.org/) | [Vuetify 3](https://vuetifyjs.com/en/)
-- 🗃️ **State Management**: Integrated with [Pinia](https://pinia.vuejs.org/), the intuitive, modular state management solution for Vue.
-- 🚦 **Routing and Layouts**: Utilizes Vue Router for SPA navigation and vite-plugin-vue-layouts for organizing Vue file layouts. [Vue Router](https://router.vuejs.org/) | [vite-plugin-vue-layouts](https://github.com/JohnCampionJr/vite-plugin-vue-layouts)
-- ⚡ **Next-Gen Tooling**: Powered by Vite, experience fast cold starts and instant HMR (Hot Module Replacement). [Vite](https://vitejs.dev/)
-- 🧩 **Automated Component Importing**: Streamline your workflow with unplugin-vue-components, automatically importing components as you use them. [unplugin-vue-components](https://github.com/antfu/unplugin-vue-components)
-
-These features are curated to provide a seamless development experience from setup to deployment, ensuring that your Vuetify application is both powerful and maintainable.
-
-## 💡 Usage
-
-This section covers how to start the development server and build your project for production.
-
-### Starting the Development Server
-
-To start the development server with hot-reload, run the following command. The server will be accessible at [http://localhost:3000](http://localhost:3000):
+# 📦 Installation
 
 ```bash
-yarn dev
+# Clone the repository
+git clone https://github.com/philchan2008/leave-calculator.git
+cd leave-calculator
+
+# Install dependencies
+npm install
+
+# Run the development server
+npm run dev
+
+# Run the unit tests
+npm run test
+
+# Run the unit tests on browser
+npm run test:browser
 ```
 
-(Repeat for npm, pnpm, and bun with respective commands.)
+# 🖥️ Electron Packaging (Coming Soon)
 
-> Add NODE_OPTIONS='--no-warnings' to suppress the JSON import warnings that happen as part of the Vuetify import mapping. If you are on Node [v21.3.0](https://nodejs.org/en/blog/release/v21.3.0) or higher, you can change this to NODE_OPTIONS='--disable-warning=5401'. If you don't mind the warning, you can remove this from your package.json dev script.
+The app will be bundled using Electron to run as a native Windows application. Packaging scripts and installer generation will be added in future releases.
 
-### Building for Production
+# 📌 Roadmap
+    [ ] Integrate Electron build and installer (planning)
+    [ ] Export leave reports to CSV/PDF
+    [ ] Sync with backend leave system (optional)
 
-To build your project for production, use:
+# 📄 License
 
-```bash
-yarn build
-```
-
-(Repeat for npm, pnpm, and bun with respective commands.)
-
-Once the build process is completed, your application will be ready for deployment in a production environment.
-
-## 💪 Support Vuetify Development
-
-This project is built with [Vuetify](https://vuetifyjs.com/en/), a UI Library with a comprehensive collection of Vue components. Vuetify is an MIT licensed Open Source project that has been made possible due to the generous contributions by our [sponsors and backers](https://vuetifyjs.com/introduction/sponsors-and-backers/). If you are interested in supporting this project, please consider:
-
-- [Requesting Enterprise Support](https://support.vuetifyjs.com/)
-- [Sponsoring John on Github](https://github.com/users/johnleider/sponsorship)
-- [Sponsoring Kael on Github](https://github.com/users/kaelwd/sponsorship)
-- [Supporting the team on Open Collective](https://opencollective.com/vuetify)
-- [Becoming a sponsor on Patreon](https://www.patreon.com/vuetify)
-- [Becoming a subscriber on Tidelift](https://tidelift.com/subscription/npm/vuetify)
-- [Making a one-time donation with Paypal](https://paypal.me/vuetify)
-
-## 📑 License
-[MIT](http://opensource.org/licenses/MIT)
-
-Copyright (c) 2016-present Vuetify, LLC
+This project is licensed under the MIT License.

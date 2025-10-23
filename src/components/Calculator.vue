@@ -39,6 +39,22 @@
           />
         </v-row>
         <v-row justify="space-around">
+          <v-date-input
+            v-model="form.lastBalDate"
+            label="Balance As Of Date"
+            max-width="368"
+            :rules="[rules.required, validateLeaveDates]"
+          />
+          <v-select
+            v-model="form.lastBalSession"
+            :items="['am', 'pm']"
+            label="am/pm"
+            :rules="[rules.required, validateLeaveDates]"
+            style="max-width: 100px"
+            variant="outlined"
+          />
+        </v-row>
+        <v-row justify="space-around">
           <v-number-input
             v-model="form.lastBal"
             label="Last Balance"
@@ -206,6 +222,8 @@
     pensionType: null,
     earningRate: 0,
     lastBal: 0,
+    lastBalDate: null,
+    lastBalSession: null,
     openingBal: 0,
     closingBal: 0,
     leaveStartDate: null,
@@ -218,18 +236,18 @@
   })
 
   const leaveEarningDays = computed(() => {
-    if (!form.value.leaveStartDate || !form.value.leaveStartSession
+    if (!form.value.lastBalDate || !form.value.lastBalSession
       || !form.value.leaveResumeDate || !form.value.leaveResumeSession
     ) return 0
-    const startSess = form.value.leaveStartSession
-    const resumeSess = form.value.leaveResumeSession
-    const start = new Date(form.value.leaveStartDate)
+    const startSess = form.value.lastBalSession
+    const endSess = form.value.leaveResumeSession
+    const start = new Date(form.value.lastBalDate)
     const end = new Date(form.value.leaveResumeDate)
     const daysDiff = Math.ceil( (end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24))
     debugger
     const earningDays = daysDiff +
-      ((startSess == 'am' && resumeSess == 'pm') ? 0.5 : 0) +
-      ((startSess == 'pm' && resumeSess == 'am') ? -0.5 : 0)
+      ((startSess == 'am' && endSess == 'pm') ? 0.5 : 0) +
+      ((startSess == 'pm' && endSess == 'am') ? -0.5 : 0)
     return earningDays
   })
 
@@ -272,7 +290,9 @@
   }
 
   function submitFrom() {
-    const { leaveStartDate, leaveEndDate, leaveStartSession, leaveEndSession } = form.value
+    const { leaveStartDate, leaveEndDate, leaveResumeDate, leaveStartSession, leaveEndSession, leaveResumeSession,
+      openingBal, closingBal, lastBal,
+     } = form.value
   }
 
   function continueFrom() {
@@ -286,11 +306,15 @@
   }
 
   function validateLeaveDates() {
-    const { termType, leaveStartDate, leaveEndDate, leaveStartSession, leaveEndSession, leaveResumeDate, leaveResumeSession, daysTaken } = form.value
+    const { termType, lastBalDate, lastBalSession,
+      leaveStartDate, leaveEndDate, leaveStartSession,
+      leaveEndSession, leaveResumeDate, leaveResumeSession,
+      daysTaken } = form.value
 
     if (!leaveStartDate || !leaveEndDate
       || !leaveStartSession || !leaveEndSession
       || !leaveResumeDate || !leaveResumeSession
+      || !lastBalDate || !lastBalSession
     ) return true // Skip if incomplete
 
     const start = new Date(leaveStartDate)
