@@ -17,11 +17,15 @@
       :search="search"
     >
       <template #item.dtstart="{ item }">
-        {{ formatDate(item.dtstart[0]) }}
+        <div style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+          {{ formatDate(item.dtstart[0]) }}
+        </div>
       </template>
 
       <template #item.dtend="{ item }">
-        {{ formatDate(item.dtend[0]) }}
+        <div style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+          {{ formatDate(item.dtend[0]) }}
+        </div>
       </template>
     </v-data-table>
   </v-card>
