@@ -15,7 +15,7 @@ describe('Calculator', () => {
     expect(wrapper.exists()).toBe(true)
   })
 
-  test('computes leaveEarningDays correctly - basic', async () => {
+  test('computes earning days (basic)', async () => {
     const wrapper = mount(Calculator, {
       global: {
         plugins: [vuetify],
@@ -29,7 +29,7 @@ describe('Calculator', () => {
     wrapper.vm.form.leaveResumeSession = 'pm';
 
     //Access computeed property
-    const result = wrapper.vm.leaveEarningDays;
+    const result = wrapper.vm.earningDaysBeforeLeave + wrapper.vm.earningDays;
     expect(result).toBe(2.5);
   })
 
@@ -47,7 +47,7 @@ describe('Calculator', () => {
     wrapper.vm.form.leaveResumeSession = 'pm';
 
     //Access computeed property
-    const result = wrapper.vm.leaveEarningDays;
+    const result = wrapper.vm.earningDaysBeforeLeave + wrapper.vm.earningDays;
     expect(result).toBe(0.5);
   })
 
@@ -65,7 +65,7 @@ describe('Calculator', () => {
     wrapper.vm.form.leaveResumeSession = 'am';
 
     //Access computeed property
-    const result = wrapper.vm.leaveEarningDays;
+    const result = wrapper.vm.earningDaysBeforeLeave + wrapper.vm.earningDays;
     expect(result).toBe(0.5);
   })
 })

@@ -82,22 +82,6 @@
           />
         </v-row>
         <v-row justify="space-around">
-          <v-date-input
-            v-model="form.leaveEndDate"
-            label="End Date"
-            max-width="368"
-            :rules="[rules.required, validateLeaveDates]"
-          />
-          <v-select
-            v-model="form.leaveEndSession"
-            :items="['am', 'pm']"
-            label="am/pm"
-            :rules="[rules.required, validateLeaveDates]"
-            style="max-width: 100px"
-            variant="outlined"
-          />
-        </v-row>
-        <v-row justify="space-around">
           <v-number-input
             v-model="form.daysTaken"
             label="Days Taken"
@@ -130,8 +114,8 @@
               <v-text-field
                 v-model="form.openingBal"
                 class="text-center m-1"
+                hide-spin-buttons
                 label="Opening Balance"
-                :precision="2"
                 readonly
                 variant="outlined"
               />
@@ -140,9 +124,10 @@
               <v-text-field
                 v-model="form.closingBal"
                 class="text-center m-1"
+                hide-spin-buttons
                 label="Closing Balance"
-                :precision="2"
                 readonly
+                type="number"
                 variant="outlined"
               />
             </v-row>
@@ -217,34 +202,62 @@
   const isFormValid = ref(false)
 
 
+  // const form = ref({
+  //   termType: null,
+  //   pensionType: null,
+  //   earningRate: 0,
+  //   lastBal: 0,
+  //   lastBalDate: null,
+  //   lastBalSession: null,
+  //   openingBal: 0,
+  //   closingBal: 0,
+  //   leaveStartDate: null,
+  //   leaveResumeDate: null,
+  //   daysTaken: 0,
+  //   leaveStartSession: null,
+  //   leaveResumeSession: null
+  // })
+
   const form = ref({
-    termType: null,
-    pensionType: null,
-    earningRate: 0,
-    lastBal: 0,
-    lastBalDate: null,
-    lastBalSession: null,
+    termType: "New",
+    pensionType: "NA",
+    earningRate: 26,
+    lastBal: 10,
+    lastBalDate: "2025-01-01",
+    lastBalSession: "am",
     openingBal: 0,
     closingBal: 0,
-    leaveStartDate: null,
-    leaveEndDate: null,
-    leaveResumeDate: null,
-    daysTaken: 0,
-    leaveStartSession: null,
-    leaveEndSession: null,
-    leaveResumeSession: null
+    leaveStartDate: "2025-01-01",
+    leaveResumeDate: "2025-01-01",
+    daysTaken: 0.5,
+    leaveStartSession: "am",
+    leaveResumeSession: "pm"
   })
 
-  const leaveEarningDays = computed(() => {
+  const earningDaysBeforeLeave = computed(() => {
     if (!form.value.lastBalDate || !form.value.lastBalSession
-      || !form.value.leaveResumeDate || !form.value.leaveResumeSession
+      || !form.value.leaveStartDate || !form.value.leaveStartSession
     ) return 0
     const startSess = form.value.lastBalSession
-    const endSess = form.value.leaveResumeSession
+    const endSess = form.value.leaveStartSession
     const start = new Date(form.value.lastBalDate)
+    const end = new Date(form.value.leaveStartDate)
+    const daysDiff = Math.ceil( (end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24))
+    const earningDays = daysDiff +
+      ((startSess == 'am' && endSess == 'pm') ? 0.5 : 0) +
+      ((startSess == 'pm' && endSess == 'am') ? -0.5 : 0)
+    return earningDays
+  })
+
+  const earningDays = computed(() => {
+    if (!form.value.leaveStartDate || !form.value.leaveStartSession
+      || !form.value.leaveResumeDate || !form.value.leaveResumeSession
+    ) return 0
+    const startSess = form.value.leaveStartSession
+    const endSess = form.value.leaveResumeSession
+    const start = new Date(form.value.leaveStartDate)
     const end = new Date(form.value.leaveResumeDate)
     const daysDiff = Math.ceil( (end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24))
-    debugger
     const earningDays = daysDiff +
       ((startSess == 'am' && endSess == 'pm') ? 0.5 : 0) +
       ((startSess == 'pm' && endSess == 'am') ? -0.5 : 0)
@@ -289,10 +302,22 @@
     }
   }
 
+  function formatToNumeric10_2(value) {
+    const num = Number.parseFloat(value)
+    if (Number.isNaN(num)) return null
+
+    const [intPart, decPart = ''] = num.toFixed(2).split('.')
+    if (intPart.length > 8) return null // 10 digits total minus 2 decimals
+    return `${intPart}.${decPart}`
+  }
+
   function submitFrom() {
-    const { leaveStartDate, leaveEndDate, leaveResumeDate, leaveStartSession, leaveEndSession, leaveResumeSession,
-      openingBal, closingBal, lastBal,
-     } = form.value
+    const { leaveStartDate, leaveResumeDate, leaveStartSession, leaveResumeSession, openingBal, closingBal, lastBal, earningRate, termType, daysTaken
+    } = form.value
+    const earnedLeaveBeforeLeave = earningDaysBeforeLeave.value * earningRate / 365
+    form.value.openingBal = formatToNumeric10_2(lastBal + earnedLeaveBeforeLeave)
+    const earnedLeave = earningDays.value * earningRate / 365
+    form.value.closingBal = formatToNumeric10_2(form.value.openingBal - daysTaken + earnedLeave)
   }
 
   function continueFrom() {
@@ -306,38 +331,38 @@
   }
 
   function validateLeaveDates() {
-    const { termType, lastBalDate, lastBalSession,
-      leaveStartDate, leaveEndDate, leaveStartSession,
-      leaveEndSession, leaveResumeDate, leaveResumeSession,
+    const { termType,
+      lastBalDate, lastBalSession,
+      leaveStartDate, leaveStartSession,
+      leaveResumeDate, leaveResumeSession,
       daysTaken } = form.value
 
-    if (!leaveStartDate || !leaveEndDate
-      || !leaveStartSession || !leaveEndSession
+    if (!leaveStartDate || !leaveStartSession
       || !leaveResumeDate || !leaveResumeSession
       || !lastBalDate || !lastBalSession
     ) return true // Skip if incomplete
 
-    const start = new Date(leaveStartDate)
-    const end = new Date(leaveEndDate)
+    const start = new Date(lastBalDate)
+    const end = new Date(leaveStartDate)
     const resume = new Date(leaveResumeDate)
 
     if (start > end) {
-      return 'Start date must be before end date'
+      return 'Last balance date must be before leave start date'
     }
 
     if (resume < end) {
-      return 'Resumption date must be after end date'
+      return 'Resumption date must be after leave start date'
     }
 
     if (start.getTime() === end.getTime()) {
-      if (leaveStartSession !== 'am' || leaveEndSession !== 'pm') {
-        return 'If start and end dates are the same, session must be AM to PM'
+      if (lastBalDate == 'pm' && leaveStartSession == 'am') {
+        return 'If last balance and leave start dates are the same, session must be from AM to PM'
       }
     }
 
     if (end.getTime() === resume.getTime()) {
-      if (leaveEndSession !== 'am' || leaveResumeSession !== 'pm') {
-        return 'If end date and resumption date are the same, session must be AM to PM'
+      if (leaveStartSession == 'pm' && leaveResumeSession == 'am') {
+        return 'If leave start and resumption dates are the same, session must be from AM to PM'
       }
     }
 
@@ -347,28 +372,6 @@
 
     return true
   }
-
-
-
-
-  // watch(() => form.value.lastBal, (newVal, oldVal) => {
-  //   console.log(`lastBal changed: ${oldVal} → ${newVal}`)
-  // })
-
-  watch(() => form.value.leaveStartDate, (newVal, oldVal) => {
-    //console.log(`leaveStartDate changed: ${oldVal} → ${newVal}`)
-    console.log(`leaveEarningDays changed: ${leaveEarningDays.value}`)
-  })
-
-  // watch(() => form.value.leaveEndDate, (newVal, oldVal) => {
-  //   //console.log(`leaveEndDate changed: ${oldVal} → ${newVal}`)
-  //   console.log(`leaveEarningDays changed: ${leaveEarningDays.value}`)
-  // })
-
-  watch(() => form.value.leaveResumeDate, (newVal, oldVal) => {
-    //console.log(`leaveEndDate changed: ${oldVal} → ${newVal}`)
-    console.log(`leaveEarningDays changed: ${leaveEarningDays.value}`)
-  })
 
 </script>
 
