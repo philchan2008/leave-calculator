@@ -3,11 +3,8 @@
     <v-toolbar>
       <v-toolbar-title>Leave Calculator</v-toolbar-title>
       <v-spacer />
-      <v-btn icon>
-        <v-icon>mdi-bell</v-icon>
-      </v-btn>
-      <v-btn icon>
-        <v-icon>mdi-account</v-icon>
+      <v-btn icon @click="listHolidays">
+        <v-icon>mdi-calendar</v-icon>
       </v-btn>
     </v-toolbar>
     <v-form ref="formRef" v-model="isFormValid">
@@ -29,11 +26,21 @@
             :rules="[rules.required]"
             variant="outlined"
           />
+        </v-row>
+        <v-row>
           <v-select
             v-model="form.earningRate"
             class="w-50"
             :items="earningRateOptions"
             label="Earning Rate"
+            :rules="[rules.required]"
+            variant="outlined"
+          />
+          <v-select
+            v-model="form.accuLimit"
+            class="w-50"
+            :items="earningLimitOptions"
+            label="Accumulative Limit"
             :rules="[rules.required]"
             variant="outlined"
           />
@@ -201,11 +208,11 @@
   const formRef = ref()
   const isFormValid = ref(false)
 
-
   // const form = ref({
   //   termType: null,
   //   pensionType: null,
   //   earningRate: 0,
+  //   accuLimit: 0,
   //   lastBal: 0,
   //   lastBalDate: null,
   //   lastBalSession: null,
@@ -222,6 +229,7 @@
     termType: "New",
     pensionType: "NA",
     earningRate: 26,
+    accuLimit: 180,
     lastBal: 10,
     lastBalDate: "2025-01-01",
     lastBalSession: "am",
@@ -265,9 +273,51 @@
   })
 
   const earningRateNew = [26, 22, 18, 14]
-  const earningRateCommon = [34,27,21,14]
-  const earningRateLocal = [40.5, 31, 22, 12.5]
-  const earningRateContract = [28,14]
+  const earningLimitNew = { 26: 78, 22: 66, 18: 54, 14: 28}
+  const earningRateCommon = [34, 27, 21, 14]
+  const earningLimitCommon = { 34: 102, 27: 81, 21: 63, 14: 28 }
+  const earningRateLocal = [49.5, 40.5, 37, 31, 22, 12.5]
+  const earningLimitLocal = { 49.5: 180, 40.5: 180, 37: 120, 31: 120, 22: 100, 14: 50 }
+  const earningRateContract = [28, 14]
+  const earningLimitContract = { 28: 28, 14: 14 }
+
+  const earningLimitOptions = computed(() => {
+    const allValues = [
+      ...Object.values(earningLimitNew),
+      ...Object.values(earningLimitCommon),
+      ...Object.values(earningLimitLocal),
+      ...Object.values(earningLimitContract)
+    ]
+
+    const uniqueSortedValues = [...new Set(allValues)].sort((b, a) => {
+      // Numeric sort if values are numbers
+      if (typeof a === 'number' && typeof b === 'number') return a - b
+
+      // Lexical sort for strings
+      return String(a).localeCompare(String(b))
+    })
+
+    return uniqueSortedValues
+
+    //FIXME: This part have deadloop in the program, it needs to fix it later.
+    //TODO: Lookup the earning limit base on selected earning rate.
+    // if (!form.value.termType) {
+    //   return allValues
+    // } else {
+    //   switch (form.value.termType) {
+    //     case 'New':
+    //       return earningLimitNew[form.value.earningRate]
+    //     case 'Common':
+    //       return earningLimitCommon[form.value.earningRate]
+    //     case 'Local':
+    //       return earningLimitLocal[form.value.earningRate]
+    //     case 'Contract':
+    //       return earningLimitContract[form.value.earningRate]
+    //     default:
+    //       return allValues
+    //   }
+    //}
+  })
 
   const earningRateOptions = computed(() => {
     switch (form.value.termType) {
@@ -288,6 +338,23 @@
     msg.value.title = title
     msg.value.text = text
     showModal.value = true
+  }
+
+  async function listHolidays() {
+    fetch("http://localhost:3001/holidays")
+      .then(response => {
+        if (!response.ok) {
+          throw new Error("Network response was not ok")
+        }
+        const data = response.json()
+        // Assume `data` is the parsed JSON from the URL
+        const holidays = data.vcalendar[0].vevent.map(event => ({
+          date: event.dtstart[0],       // Format: YYYYMMDD
+          name: event.summary           // Holiday name
+        }));
+
+        console.log(holidays);
+      })
   }
 
   function resetForm() {
@@ -315,9 +382,9 @@
     const { leaveStartDate, leaveResumeDate, leaveStartSession, leaveResumeSession, openingBal, closingBal, lastBal, earningRate, termType, daysTaken
     } = form.value
     const earnedLeaveBeforeLeave = earningDaysBeforeLeave.value * earningRate / 365
-    form.value.openingBal = formatToNumeric10_2(lastBal + earnedLeaveBeforeLeave)
+    form.value.openingBal = Math.min(formatToNumeric10_2(lastBal + earnedLeaveBeforeLeave), form.value.accuLimit)
     const earnedLeave = earningDays.value * earningRate / 365
-    form.value.closingBal = formatToNumeric10_2(form.value.openingBal - daysTaken + earnedLeave)
+    form.value.closingBal = Math.min(formatToNumeric10_2(form.value.openingBal - daysTaken + earnedLeave), form.value.accuLimit)
   }
 
   function continueFrom() {
