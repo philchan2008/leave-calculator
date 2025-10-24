@@ -1,12 +1,18 @@
 <template>
-  <v-container class="fill-height" max-width="900">
-    <v-toolbar>
+  <v-toolbar>
       <v-toolbar-title>Leave Calculator</v-toolbar-title>
       <v-spacer />
-      <v-btn icon @click="listHolidays">
-        <v-icon>mdi-calendar</v-icon>
+      <v-btn icon @click="() => dialog.openHolidayList()">
+        <v-icon>mdi-calendar-star</v-icon>
+      </v-btn>
+      <v-btn icon :to="'/daydiff'" router>
+        <v-icon>mdi-calendar-expand-horizontal</v-icon>
+      </v-btn>
+      <v-btn icon :to="'/about'" router>
+        <v-icon>mdi-information-outline</v-icon>
       </v-btn>
     </v-toolbar>
+  <v-container class="fill-height" max-width="900">
     <v-form ref="formRef" v-model="isFormValid">
       <v-container>
         <v-row justify="space-around">
@@ -148,6 +154,7 @@
                 style="width: 120px"
                 variant="outlined"
                 @click="submitFrom"
+                :disabled="!isFormComplete"
               >
                 Calculate
               </v-btn>
@@ -179,36 +186,14 @@
       </v-container>
     </v-form>
   </v-container>
-  <v-dialog v-model="showModal" max-width="400">
-    <template #default>
-      <v-card>
-        <v-card-title class="text-h6">{{ msg.title }}</v-card-title>
-        <v-card-text>
-          {{ msg.text }}
-        </v-card-text>
-        <v-card-actions>
-          <v-spacer />
-          <v-btn color="primary" @click="showModal = false">OK</v-btn>
-        </v-card-actions>
-      </v-card>
-    </template>
-  </v-dialog>
-  <v-dialog v-model="showHolidayList" max-width="800px">
-    <HolidayList />
-  </v-dialog>
 </template>
 
 <script setup>
-import { computed, ref, shallowRef, watch } from 'vue'
-import { formatToNumeric10_2 } from '@/utils/leaveUtils'
-import HolidayList from './HolidayList.vue'
+import { computed, ref, watch } from 'vue'
+import { formatToNumeric10_2 } from '../utils/leaveUtils'
+import { useDialogStore } from '../../stores/useDialogStore';
 
-const showModal = ref(false)
-const showHolidayList = ref(false)
-const msg = ref({
-  title: '',
-  text: ''
-})
+const dialog = useDialogStore();
 
 const rules = {
   required: (v) => !!v || 'This field is required',
@@ -217,39 +202,46 @@ const rules = {
 const formRef = ref()
 const isFormValid = ref(false)
 
-// const form = ref({
-//   termType: null,
-//   pensionType: null,
-//   earningRate: 0,
-//   accuLimit: 0,
-//   lastBal: 0,
-//   lastBalDate: null,
-//   lastBalSession: null,
-//   openingBal: 0,
-//   closingBal: 0,
-//   leaveStartDate: null,
-//   leaveResumeDate: null,
-//   daysTaken: 0,
-//   leaveStartSession: null,
-//   leaveResumeSession: null
-// })
-
 const form = ref({
-  termType: "New",
-  pensionType: "NA",
-  earningRate: 14,
-  accuLimit: 28,
-  lastBal: 10,
-  lastBalDate: "2025-01-01",
-  lastBalSession: "am",
+  termType: null,
+  pensionType: null,
+  earningRate: 0,
+  accuLimit: 0,
+  lastBal: 0,
+  lastBalDate: null,
+  lastBalSession: null,
   openingBal: 0,
   closingBal: 0,
-  leaveStartDate: "2025-01-01",
-  leaveResumeDate: "2025-01-01",
-  daysTaken: 0.5,
-  leaveStartSession: "am",
-  leaveResumeSession: "pm"
+  leaveStartDate: null,
+  leaveResumeDate: null,
+  daysTaken: 0,
+  leaveStartSession: null,
+  leaveResumeSession: null
 })
+
+// const form = ref({
+//   termType: "New",
+//   pensionType: "NA",
+//   earningRate: 14,
+//   accuLimit: 28,
+//   lastBal: 10,
+//   lastBalDate: "2025-01-01",
+//   lastBalSession: "am",
+//   openingBal: 0,
+//   closingBal: 0,
+//   leaveStartDate: "2025-01-01",
+//   leaveResumeDate: "2025-01-01",
+//   daysTaken: 0.5,
+//   leaveStartSession: "am",
+//   leaveResumeSession: "pm"
+// })
+
+const isFormComplete = computed(() => {
+  return Object.values(form.value).every(val => {
+    // Accept 0 as valid, reject null, undefined, and empty string
+    return val !== null && val !== undefined && val !== '';
+  });
+});
 
 const earningDaysBeforeLeave = computed(() => {
   if (!form.value.lastBalDate || !form.value.lastBalSession
@@ -343,16 +335,6 @@ const earningRateOptions = computed(() => {
   }
 })
 
-function showMsg(title, text) {
-  msg.value.title = title
-  msg.value.text = text
-  showModal.value = true
-}
-
-async function listHolidays() {
-  showHolidayList.value = true;
-}
-
 function resetFields(expectFields) {
   for (const key in form.value) {
     if (!expectFields.includes(key)) {
@@ -414,7 +396,7 @@ function validateLeaveDates() {
   }
 
   if (start.getTime() === end.getTime()) {
-    if (lastBalDate == 'pm' && leaveStartSession == 'am') {
+    if (lastBalSession == 'pm' && leaveStartSession == 'am') {
       return 'If last balance and leave start dates are the same, session must be from AM to PM'
     }
   }

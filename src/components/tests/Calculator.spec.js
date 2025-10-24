@@ -1,10 +1,11 @@
-import { mount } from '@vue/test-utils'
+import { mount, shallowMount } from '@vue/test-utils'
 import { describe, expect, it, test } from "vitest"
 import Calculator from "../Calculator.vue"
 import { vuetify } from './vuetify-test-plugin'
 import { beforeEach } from 'vitest'
 import testCases from './CalculatorTestCases.json'
-
+import { createTestingPinia } from '@pinia/testing'
+import { nextTick } from 'vue'
 
 describe('Calculator', () => {
 
@@ -16,7 +17,22 @@ describe('Calculator', () => {
   beforeEach(() => {
     wrapper = mount(Calculator, {
       global: {
-        plugins: [vuetify],
+        plugins: [
+          vuetify,
+          createTestingPinia({
+            initialState: {
+              dialog: {
+                showModal: false,
+                showHolidayList: false,
+                msg: {
+                  title: '',
+                  text: ''
+                }
+               }
+            },
+            stubActions: false
+          })
+        ],
         stubs: ['v-date-input'],
       }
     })
@@ -34,12 +50,16 @@ describe('Calculator', () => {
     Object.assign(wrapper.vm.form, {
       lastBalDate: '2025-01-01',
       lastBalSession: 'am',
+      leaveStartDate: '2025-01-01',
+      leaveStartSession: 'am',
       leaveResumeDate: '2025-01-03',
       leaveResumeSession: 'pm',
     })
 
     //Access computeed property
-    const result = wrapper.vm.earningDaysBeforeLeave + wrapper.vm.earningDays
+    await nextTick()
+
+    const result = (wrapper.vm.earningDaysBeforeLeave + wrapper.vm.earningDays)
     expect(result).toBe(2.5)
   })
 
@@ -48,12 +68,16 @@ describe('Calculator', () => {
     Object.assign(wrapper.vm.form, {
       lastBalDate: '2025-01-01',
       lastBalSession: 'am',
+      leaveStartDate: '2025-01-01',
+      leaveStartSession: 'am',
       leaveResumeDate: '2025-01-01',
       leaveResumeSession: 'pm',
     })
 
     //Access computeed property
-    const result = wrapper.vm.earningDaysBeforeLeave + wrapper.vm.earningDays;
+    await nextTick()
+
+    const result = (wrapper.vm.earningDaysBeforeLeave + wrapper.vm.earningDays);
     expect(result).toBe(0.5);
   })
 
@@ -62,11 +86,15 @@ describe('Calculator', () => {
     Object.assign(wrapper.vm.form, {
       lastBalDate: '2025-01-01',
       lastBalSession: 'pm',
+      leaveStartDate: '2025-01-01',
+      leaveStartSession: 'pm',
       leaveResumeDate: '2025-01-02',
       leaveResumeSession: 'am',
     })
 
     //Access computeed property
+    await nextTick()
+
     const result = wrapper.vm.earningDaysBeforeLeave + wrapper.vm.earningDays;
     expect(result).toBe(0.5);
   })
@@ -138,11 +166,13 @@ describe('Calculator', () => {
       leaveResumeSession: 'am',
     })
     await submitBtn.trigger('click')
+    await nextTick()
 
     const lastBal = wrapper.vm.form.closingBal
     const lastBalDate = wrapper.vm.form.leaveResumeDate
     const lastBalSession = wrapper.vm.form.leaveResumeSession
     await continueBtn.trigger('click')
+    await nextTick()
 
     expect(wrapper.vm.form.lastBal).toBeCloseTo(lastBal, 0.001)
     expect(wrapper.vm.form.lastBalDate).toBe(lastBalDate)
@@ -153,14 +183,18 @@ describe('Calculator', () => {
     // Set form values
     testCases.forEach(async (t) => {
       it(`Test Case ${t.caseNo}: ${t.caseDesc}`, async () => {
-         Object.assign(wrapper.vm.form, t)
+        //NOTE: Somehow Object.assign() no longer works #LESSONLEARNED
+        //Object.assign(wrapper.vm.form, t.input)
+        wrapper.vm.form = { ...t.input }
+        await nextTick()
 
         await submitBtn.trigger('click')
+        await nextTick()
 
         expect(wrapper.vm.form.openingBal)
-         .toBeCloseTo(t.expectedOpeningBal, t.expectedTolerance)
+         .toBeCloseTo(t.expected.openingBal, t.expected.tolerance)
         expect(wrapper.vm.form.closingBal)
-         .toBeCloseTo(t.expectedClosingBal, t.expectedTolerance)
+         .toBeCloseTo(t.expected.closingBal, t.expected.tolerance)
       })
 
     })

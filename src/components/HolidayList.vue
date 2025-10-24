@@ -34,6 +34,7 @@
 <script setup>
 import axios from 'axios';
 import { ref, onMounted, computed } from 'vue';
+import { getHolidays } from '@/utils/leaveUtils';
 
 const holidays = ref([]);
 
@@ -60,30 +61,8 @@ const headers = [
 ]
 
 onMounted(async () => {
-  await axios.get("http://localhost:3001/holidays")
-    .then(res => {
-      holidays.value = res.data.vcalendar[0].vevent.map(h => ({
-        dtstart: h.dtstart,
-        dtend: h.dtend,
-        summary: h.summary
-      }))
-      /**
-       * vcalendar: [
-          {
-            dtstart: ["20240101", { value: "DATE" }],
-            dtend: ["20240102", { value: "DATE" }],
-            summary: "The first day of January"
-          },
-          {
-            dtstart: ["20240210", { value: "DATE" }],
-            dtend: ["20240211", { value: "DATE" }],
-            summary: "Lunar New Year’s Day"
-          }
-        */
-    })
-    .catch(err => {
-      alert('Error',err.message)
-    });
+  holidays.value = await getHolidays()
+  console.log(holidays.value)
 })
 
 </script>

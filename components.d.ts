@@ -12,7 +12,10 @@ export {}
 declare module 'vue' {
   export interface GlobalComponents {
     Calculator: typeof import('./src/components/Calculator.vue')['default']
+    DaysDiffCalc: typeof import('./src/components/DaysDiffCalc.vue')['default']
+    Dialogs: typeof import('./src/components/Dialogs.vue')['default']
     HolidayList: typeof import('./src/components/HolidayList.vue')['default']
+    PrintHistory: typeof import('./src/components/PrintHistory.vue')['default']
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']
     TestPage: typeof import('./src/components/TestPage.vue')['default']
