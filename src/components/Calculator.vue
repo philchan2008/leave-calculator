@@ -432,5 +432,12 @@ function validateLeaveDates() {
   return true
 }
 
+watch(() => form.value.daysTaken, (val) => {
+  const rounded = Math.round(val * 2) / 2;
+  if (val !== rounded) {
+    form.value.daysTaken = rounded;
+  }
+})
+
 </script>
 
