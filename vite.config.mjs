@@ -86,4 +86,7 @@ export default defineConfig({
       ],
     },
   },
+  json: {
+    namedExports: true
+  }
 })

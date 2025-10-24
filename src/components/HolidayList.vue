@@ -59,8 +59,8 @@ const headers = [
   { key: 'summary', title: 'Summary' },
 ]
 
-onMounted(() => {
-  axios.get("http://localhost:3001/holidays")
+onMounted(async () => {
+  await axios.get("http://localhost:3001/holidays")
     .then(res => {
       holidays.value = res.data.vcalendar[0].vevent.map(h => ({
         dtstart: h.dtstart,
@@ -82,7 +82,7 @@ onMounted(() => {
         */
     })
     .catch(err => {
-      showMsg('Error',err.message)
+      alert('Error',err.message)
     });
 })
 

@@ -142,6 +142,7 @@
           <v-col class="m-1" cols="5">
             <v-row>
               <v-btn
+                id="submitBtn"
                 class="m-1"
                 color="primary"
                 style="width: 120px"
@@ -153,6 +154,7 @@
             </v-row>
             <v-row>
               <v-btn
+                id="continueBtn"
                 class="m-1"
                 color="secondary"
                 style="width: 120px"
@@ -162,6 +164,7 @@
                 Continue
               </v-btn>
               <v-btn
+                id="resetBtn"
                 class="m-1"
                 color="secondary"
                 style="width: 120px"
@@ -198,7 +201,6 @@
 <script setup>
 import { computed, ref, shallowRef, watch } from 'vue'
 import { formatToNumeric10_2 } from '@/utils/leaveUtils'
-import axios from 'axios'
 import HolidayList from './HolidayList.vue'
 
 const showModal = ref(false)
@@ -235,8 +237,8 @@ const isFormValid = ref(false)
 const form = ref({
   termType: "New",
   pensionType: "NA",
-  earningRate: 26,
-  accuLimit: 180,
+  earningRate: 14,
+  accuLimit: 28,
   lastBal: 10,
   lastBalDate: "2025-01-01",
   lastBalSession: "am",
@@ -351,9 +353,9 @@ async function listHolidays() {
   showHolidayList.value = true;
 }
 
-function resetForm() {
+function resetFields(expectFields) {
   for (const key in form.value) {
-    if (key !== "termType" && key !== "pensionType" && key !== "earningRate") {
+    if (!expectFields.includes(key)) {
       if (typeof form.value[key] === 'number') {
         form.value[key] = 0
       } else {
@@ -363,9 +365,13 @@ function resetForm() {
   }
 }
 
+function resetForm() {
+  resetFields(["termType","pensionType","earningRate","accuLimit"])
+}
+
 
 function submitFrom() {
-  const { leaveStartDate, leaveResumeDate, leaveStartSession, leaveResumeSession, openingBal, closingBal, lastBal, earningRate, termType, daysTaken
+  const { lastBal, earningRate, daysTaken
   } = form.value
   const earnedLeaveBeforeLeave = earningDaysBeforeLeave.value * earningRate / 365
   form.value.openingBal = Math.min(formatToNumeric10_2(lastBal + earnedLeaveBeforeLeave), form.value.accuLimit)
@@ -374,16 +380,21 @@ function submitFrom() {
 }
 
 function continueFrom() {
-  //alert('To be implemented')
-  showMsg('Info', 'To be implemented.')
+  const lastBal = form.value.closingBal
+  const lastBalDate = form.value.leaveResumeDate
+  const lastBalSession = form.value.leaveResumeSession
+  resetFields(["termType", "pensionType", "earningRate", "accuLimit"])
+  form.value.lastBal = lastBal
+  form.value.lastBalDate = lastBalDate
+  form.value.lastBalSession = lastBalSession
 }
 
 function validateLeaveDates() {
-  const { termType,
+  const {
     lastBalDate, lastBalSession,
     leaveStartDate, leaveStartSession,
     leaveResumeDate, leaveResumeSession,
-    daysTaken } = form.value
+  } = form.value
 
   if (!leaveStartDate || !leaveStartSession
     || !leaveResumeDate || !leaveResumeSession
