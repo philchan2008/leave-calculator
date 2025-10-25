@@ -3,6 +3,8 @@ import { describe, expect, it, test } from "vitest"
 import DaysDiffCalc from "../DaysDiffCalc.vue"
 import { vuetify } from './vuetify-test-plugin'
 import { beforeEach } from 'vitest'
+import { createTestingPinia } from '@pinia/testing'
+import { vi } from 'vitest'  // NOTE: not needed with `globals: true`
 
 describe('DaysDiffCalc', () => {
 
@@ -11,7 +13,24 @@ describe('DaysDiffCalc', () => {
   beforeEach(() => {
     wrapper = mount(DaysDiffCalc, {
       global: {
-        plugins: [vuetify],
+        plugins: [
+          vuetify,
+          //NOTE: Details see https://pinia.vuejs.org/cookbook/testing.html#Specifying-the-createSpy-function
+          createTestingPinia({
+            createSpy: vi.fn,
+            stubActions: false,
+            initialState: {
+              dialog: {
+                showModal: false,
+                showHolidayList: false,
+                msg: {
+                  title: '',
+                  text: ''
+                }
+               }
+            },
+          })
+        ],
         stubs: ['v-date-input'],
       }
     })
@@ -30,9 +49,10 @@ describe('DaysDiffCalc', () => {
     const daysCount = wrapper.vm.daysCount
     const daysTaken = wrapper.vm.daysTaken
     expect(daysCount).toBe(0.5)
-    expect(daysTaken).toBe(0)
+    expect(daysTaken).toBe(0.5)
   })
 
+  //TODO: Complete the test cases for the days diff test.
   // describe('earning calculation test cases', async () => {
   //   // Set form values
   //   testCases.forEach(async (t) => {

@@ -6,9 +6,9 @@ import { beforeEach } from 'vitest'
 import testCases from './CalculatorTestCases.json'
 import { createTestingPinia } from '@pinia/testing'
 import { nextTick } from 'vue'
+import { vi } from 'vitest' // NOTE: not needed with `globals: true`
 
 describe('Calculator', () => {
-
   let wrapper
   let submitBtn
   let continueBtn
@@ -20,6 +20,8 @@ describe('Calculator', () => {
         plugins: [
           vuetify,
           createTestingPinia({
+            createSpy: vi.fn,
+            stubActions: false,
             initialState: {
               dialog: {
                 showModal: false,
@@ -30,7 +32,6 @@ describe('Calculator', () => {
                 }
                }
             },
-            stubActions: false
           })
         ],
         stubs: ['v-date-input'],
