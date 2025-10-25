@@ -87,8 +87,9 @@
 </template>
 
 <script setup>
-import { computed, ref, watch } from 'vue'
+import { computed, ref, watch, watchEffect } from 'vue'
 import { useDialogStore } from '../../stores/useDialogStore'
+import { getHolidays } from '@/utils/leaveUtils'
 
 const dialog = useDialogStore()
 
@@ -98,6 +99,7 @@ const rules = {
 
 const formRef = ref()
 const isFormValid = ref(false)
+const daysOfHolidays = ref(0)
 
 const form = ref({
   leaveStartDate: '2025-01-01',
@@ -157,31 +159,27 @@ const daysCount = computed(() => {
   return 0
 })
 
-const daysOfHolidays = computed(() => {
-  try {
-    const start = new Date(form.value.leaveStartDate)
-    const end = new Date(form.value.leaveEndDate)
-    let count = 0
-    for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
-      const day = d.getDay()
-      const dateStr = d.toISOString().split('T')[0]
-      const isWeekend = (day === 0 || day === 6)
-      const isCustomHoliday = holidays.some(range => {
-          return dateStr >= range.dtstart && dateStr <= range.dtend
-      })
-      if (isWeekend || isCustomHoliday) {
-        count++
-      }
-    }
-    return count
-  } catch (err) {
-    console.log(err.message)
-  }
-  return 0
-})
-
 const daysTaken = computed(() => {
   return daysCount.value - daysOfHolidays.value
+})
+
+watchEffect(async () => {
+  const start = new Date(form.value.leaveStartDate)
+  const end = new Date(form.value.leaveEndDate)
+  let count = 0
+  const holidays = await getHolidays()
+  for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+    const day = d.getDay()
+    const dateStr = d.toISOString().split('T')[0]
+    const isWeekend = (day === 0 || day === 6)
+    const isCustomHoliday = holidays.some(range => {
+        return dateStr >= range.dtstart && dateStr <= range.dtend
+    })
+    if (isWeekend || isCustomHoliday) {
+      count++
+    }
+  }
+  daysOfHolidays.value = count
 })
 
 </script>
