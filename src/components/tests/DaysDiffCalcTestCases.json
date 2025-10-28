@@ -1,0 +1,162 @@
+[
+  {
+    "caseNo": 1,
+    "caseDesc": "0.5 half day AM",
+    "input": {
+      "leaveStartDate": "2025-10-20",
+      "leaveStartSession": "am",
+      "leaveEndDate": "2025-10-20",
+      "leaveEndSession": "pm"
+    },
+    "expected": {
+      "tolerance": 0.0001,
+      "daysCount": 0.5,
+      "daysOfHolidays": 0,
+      "daysTaken": 0.5
+    }
+  },
+  {
+    "caseNo": 2,
+    "caseDesc": "0.5 half day PM",
+    "input": {
+      "leaveStartDate": "2025-10-20",
+      "leaveStartSession": "pm",
+      "leaveEndDate": "2025-10-21",
+      "leaveEndSession": "am"
+    },
+    "expected": {
+      "tolerance": 0.0001,
+      "daysCount": 0.5,
+      "daysOfHolidays": 0.0,
+      "daysTaken": 0.5
+    }
+  },
+  {
+    "caseNo": 3,
+    "caseDesc": "1 day AM-AM",
+    "input": {
+      "leaveStartDate": "2025-10-20",
+      "leaveStartSession": "am",
+      "leaveEndDate": "2025-10-21",
+      "leaveEndSession": "am"
+    },
+    "expected": {
+      "tolerance": 0.0001,
+      "daysCount": 1,
+      "daysOfHolidays": 0.0,
+      "daysTaken": 1
+    }
+  },
+  {
+    "caseNo": 4,
+    "caseDesc": "1 day PM-PM",
+    "input": {
+      "leaveStartDate": "2025-10-20",
+      "leaveStartSession": "pm",
+      "leaveEndDate": "2025-10-21",
+      "leaveEndSession": "pm"
+    },
+    "expected": {
+      "tolerance": 0.0001,
+      "daysCount": 1,
+      "daysOfHolidays": 0.0,
+      "daysTaken": 1
+    }
+  },
+  {
+    "caseNo": 6,
+    "caseDesc": "Holiday check",
+    "input": {
+      "leaveStartDate": "2025-10-28",
+      "leaveStartSession": "am",
+      "leaveEndDate": "2025-10-31",
+      "leaveEndSession": "am"
+    },
+    "expected": {
+      "tolerance": 0.0001,
+      "daysCount": 3,
+      "daysOfHolidays": 1,
+      "daysTaken": 2
+    }
+  },
+  {
+    "caseNo": 7,
+    "caseDesc": "Weekend only leave",
+    "input": {
+      "leaveStartDate": "2025-11-01",
+      "leaveStartSession": "am",
+      "leaveEndDate": "2025-11-03",
+      "leaveEndSession": "am"
+    },
+    "expected": {
+      "tolerance": 0.0001,
+      "daysCount": 2,
+      "daysOfHolidays": 2,
+      "daysTaken": 0
+    }
+  },
+  {
+    "caseNo": 8,
+    "caseDesc": "Includes Chung Yeung Festival",
+    "input": {
+      "leaveStartDate": "2025-10-28",
+      "leaveStartSession": "pm",
+      "leaveEndDate": "2025-10-31",
+      "leaveEndSession": "pm"
+    },
+    "expected": {
+      "tolerance": 0.0001,
+      "daysCount": 3,
+      "daysOfHolidays": 1,
+      "daysTaken": 2
+    }
+  },
+  {
+    "caseNo": 9,
+    "caseDesc": "Weekend and public holiday",
+    "input": {
+      "leaveStartDate": "2025-10-31",
+      "leaveStartSession": "pm",
+      "leaveEndDate": "2025-11-04",
+      "leaveEndSession": "am"
+    },
+    "expected": {
+      "tolerance": 0.0001,
+      "daysCount": 3.5,
+      "daysOfHolidays": 2,
+      "daysTaken": 1.5
+    }
+  },
+  {
+    "caseNo": 10,
+    "caseDesc": "No holidays in range",
+    "input": {
+      "leaveStartDate": "2025-11-04",
+      "leaveStartSession": "am",
+      "leaveEndDate": "2025-11-06",
+      "leaveEndSession": "am"
+    },
+    "expected": {
+      "tolerance": 0.0001,
+      "daysCount": 2,
+      "daysOfHolidays": 0,
+      "daysTaken": 2
+    }
+  },
+  {
+    "caseNo": 11,
+    "caseDesc": "Start and end on weekend",
+    "input": {
+      "leaveStartDate": "2025-11-01",
+      "leaveStartSession": "am",
+      "leaveEndDate": "2025-11-02",
+      "leaveEndSession": "pm"
+    },
+    "expected": {
+      "tolerance": 0.0001,
+      "daysCount": 1.5,
+      "daysOfHolidays": 1.5,
+      "daysTaken": 0
+    }
+  }
+]

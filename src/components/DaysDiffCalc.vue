@@ -19,12 +19,14 @@
           <v-date-input
             v-model="form.leaveStartDate"
             label="Start Date"
+            placeholder="Start Date"
             max-width="368"
             :rules="[rules.required, validateLeaveDates]"
           />
           <v-select
             v-model="form.leaveStartSession"
             :items="['am', 'pm']"
+            placeholder="Start Session"
             label="am/pm"
             :rules="[rules.required, validateLeaveDates]"
             style="max-width: 100px"
@@ -34,7 +36,8 @@
         <v-row justify="space-around">
           <v-date-input
             v-model="form.leaveEndDate"
-            label="End Date"
+            label="Resumption Date (exclusive)"
+            placeholder="Resumption Date"
             max-width="368"
             :rules="[rules.required, validateLeaveDates]"
           />
@@ -42,6 +45,7 @@
             v-model="form.leaveEndSession"
             :items="['am', 'pm']"
             label="am/pm"
+            placeholder="End Session"
             :rules="[rules.required, validateLeaveDates]"
             style="max-width: 100px"
             variant="outlined"
@@ -51,7 +55,8 @@
         <v-row justify="space-around">
           <v-col>
             <v-text-field
-              v-model="daysCount"
+              id="daysCount"
+              v-model="form.daysCount"
               class="text-center m-1"
               hide-spin-buttons
               label="Days Count"
@@ -62,7 +67,8 @@
           </v-col>
           <v-col>
             <v-text-field
-              v-model="daysOfHolidays"
+              id="daysOfHolidays"
+              v-model="form.daysOfHolidays"
               class="text-center m-1"
               hide-spin-buttons
               label="Holiday Days"
@@ -72,7 +78,8 @@
           </v-col>
           <v-col>
             <v-text-field
-              v-model="daysTaken"
+              id="daysTaken"
+              v-model="form.daysTaken"
               class="text-center m-1"
               hide-spin-buttons
               label="Duty Days"
@@ -87,9 +94,9 @@
 </template>
 
 <script setup>
-import { computed, ref, watch, watchEffect } from 'vue'
+import { computed, ref, watch, watchEffect, reactive } from 'vue'
 import { useDialogStore } from '../../stores/useDialogStore'
-import { getHolidays } from '@/utils/leaveUtils'
+import { getHolidays } from '../utils/leaveUtils'
 
 const dialog = useDialogStore()
 
@@ -99,21 +106,22 @@ const rules = {
 
 const formRef = ref()
 const isFormValid = ref(false)
-const daysOfHolidays = ref(0)
 
-const form = ref({
-  leaveStartDate: '2025-01-01',
-  leaveEndDate: '2025-01-01',
-  leaveStartSession: 'am',
-  leaveEndSession: 'pm',
+const form = reactive({
+  leaveStartDate: "2025-11-01",
+  leaveStartSession: "am",
+  leaveEndDate: "2025-11-02",
+  leaveEndSession: "pm",
+  daysCount: 0,
+  daysOfHolidays: 0,
+  daysTaken: 0,
 })
-
 
 function validateLeaveDates() {
   const {
     leaveStartDate, leaveStartSession,
     leaveEndDate, leaveEndSession,
-  } = form.value
+  } = form
 
   if (!leaveStartDate || !leaveStartSession
     || !leaveEndDate || !leaveEndSession
@@ -125,7 +133,6 @@ function validateLeaveDates() {
   if (start > end) {
     return 'Start date must be before end date'
   }
-
 
   if (start.getTime() === end.getTime()) {
     if (leaveStartSession == 'pm' && leaveEndSession == 'am') {
@@ -140,46 +147,60 @@ function validateLeaveDates() {
   return true
 }
 
-const daysCount = computed(() => {
-  try {
-    const start = new Date(form.value.leaveStartDate)
-    const end = new Date(form.value.leaveEndDate)
-    const startSess = form.value.leaveStartSession
-    const endSess = form.value.leaveEndSession
+/**
+ * Old System Logic
+ *  def day = DateUtils.getStartToEndDateDays(dtLeaveResump, dtLeaveStart)
+    if (sessLeaveStart == 'AM' && sessLeaveResump == 'PM') {
+        day = day + 0.5
+    } else if (sessLeaveStart == 'PM' && sessLeaveResump == 'AM') {
+        day = day - 0.5
+    }
+    if (termsCode == 'L' || json.termsDesc == 'Local Terms') {
+        sql = 'select ' + inOpen + '+' + '(' + '(' + day + '-' + daysTaken + ')' + '*' + tempEarningRate + '/' + '365.00' + ')' + '-' + daysTaken
+    } else {
+        sql = 'select ' + inOpen + '+' + '(' + day + '*' + tempEarningRate + '/' + '365.00' + ')' + '-' + daysTaken
+    }
+ *
+ */
 
-    const diffInMs = end.getTime() - start.getTime()
-    const dayDiff = Math.ceil(diffInMs / (1000 * 60 * 60 * 24))
-      + ((startSess == 'pm' && endSess == 'am') ? -0.5 : 0)
-      + ((startSess == 'am' && endSess == 'pm') ?  0.5 : 0)
 
-    return dayDiff
-  } catch (err) {
-    console.log(err.message)
-  }
-  return 0
-})
+async function calculateLeaveDetails(formData) {
+  const start = new Date(formData.leaveStartDate)
+  const end = new Date(formData.leaveEndDate)
+  const startSess = formData.leaveStartSession
+  const endSess = formData.leaveEndSession
 
-const daysTaken = computed(() => {
-  return daysCount.value - daysOfHolidays.value
-})
+  const diffInMs = end.getTime() - start.getTime()
+  const countOfDays = Math.ceil(diffInMs / (1000 * 60 * 60 * 24))
+    + ((startSess == 'am' && endSess == 'pm') ? +0.5 : 0)
+    + ((startSess == 'pm' && endSess == 'am') ? -0.5 : 0)
 
-watchEffect(async () => {
-  const start = new Date(form.value.leaveStartDate)
-  const end = new Date(form.value.leaveEndDate)
-  let count = 0
+  let countOfHolidays = 0
   const holidays = await getHolidays()
   for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
     const day = d.getDay()
-    const dateStr = d.toISOString().split('T')[0]
+    const dateStr = d.toISOString().split('T')[0].replaceAll("-","")
     const isWeekend = (day === 0 || day === 6)
-    const isCustomHoliday = holidays.some(range => {
-        return dateStr >= range.dtstart && dateStr <= range.dtend
-    })
+    const isCustomHoliday = holidays.some(range =>
+      dateStr >= range.dtstart && dateStr <= range.dtend
+    )
     if (isWeekend || isCustomHoliday) {
-      count++
+      countOfHolidays++
     }
+    //console.log(`Date: ${d}, isWeekend: ${isWeekend}, isCustomHoliday: ${isCustomHoliday}`)
   }
-  daysOfHolidays.value = count
+
+  if (countOfHolidays > countOfDays) {
+    countOfHolidays = countOfDays
+  }
+
+  formData.daysCount = countOfDays
+  formData.daysOfHolidays = countOfHolidays
+  formData.daysTaken = countOfDays - countOfHolidays
+}
+
+watchEffect(async () => {
+  await calculateLeaveDetails(form)
 })
 
 </script>

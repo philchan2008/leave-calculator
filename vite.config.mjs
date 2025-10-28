@@ -11,6 +11,7 @@ import Components from 'unplugin-vue-components/vite'
 import VueRouter from 'unplugin-vue-router/vite'
 import { defineConfig } from 'vite'
 import Vuetify, { transformAssetUrls } from 'vite-plugin-vuetify'
+import path, { dirname } from 'node:path'
 
 
 // https://vitejs.dev/config/
@@ -52,7 +53,8 @@ export default defineConfig({
   define: { 'process.env': {} },
   resolve: {
     alias: {
-      '@': fileURLToPath(new URL('src', import.meta.url)),
+      // '@': fileURLToPath(new URL('src', import.meta.url)),
+      '@': path.resolve(dirname(fileURLToPath(import.meta.url)), 'src'),
     },
     extensions: [
       '.js',

@@ -3,6 +3,6 @@
 </template>
 
 <script setup>
-import DaysDiffCalc from '@/components/DaysDiffCalc.vue';
+import DaysDiffCalc from '@/components/DaysDiffCalc.vue'
   //
 </script>
