@@ -97,6 +97,7 @@
 import { computed, ref, watch, watchEffect, reactive } from 'vue'
 import { useDialogStore } from '../../stores/useDialogStore'
 import { getHolidays } from '../utils/leaveUtils'
+import { useDayDiffStore } from '/stores/daysCalcStore'
 
 const dialog = useDialogStore()
 
@@ -107,15 +108,22 @@ const rules = {
 const formRef = ref()
 const isFormValid = ref(false)
 
-const form = reactive({
-  leaveStartDate: "2025-11-01",
-  leaveStartSession: "am",
-  leaveEndDate: "2025-11-02",
-  leaveEndSession: "pm",
-  daysCount: 0,
-  daysOfHolidays: 0,
-  daysTaken: 0,
-})
+const today = new Date().toISOString().split('T')[0]
+
+const form = useDayDiffStore()
+
+if (!form.leaveStartDate) form.leaveStartDate = today
+if (!form.leaveEndDate) form.leaveEndDate = today
+
+// const form = reactive({
+//   leaveStartDate: today,
+//   leaveStartSession: "am",
+//   leaveEndDate: today,
+//   leaveEndSession: "am",
+//   daysCount: 0,
+//   daysOfHolidays: 0,
+//   daysTaken: 0,
+// })
 
 function validateLeaveDates() {
   const {

@@ -10,6 +10,7 @@ import { vi } from 'vitest' // NOTE: not needed with `globals: true`
 
 describe('Calculator', () => {
   let wrapper
+  let form
   let submitBtn
   let continueBtn
   let resetBtn
@@ -37,6 +38,7 @@ describe('Calculator', () => {
         stubs: ['v-date-input'],
       }
     })
+    form = wrapper.vm.form
     submitBtn = wrapper.find('#submitBtn')
     continueBtn = wrapper.find('#continueBtn')
     resetBtn = wrapper.find('#resetBtn')
@@ -48,7 +50,7 @@ describe('Calculator', () => {
 
   test('computes earning days (basic)', async () => {
     // Set form values
-    Object.assign(wrapper.vm.form, {
+    Object.assign(form, {
       lastBalDate: '2025-01-01',
       lastBalSession: 'am',
       leaveStartDate: '2025-01-01',
@@ -66,7 +68,7 @@ describe('Calculator', () => {
 
   test('earning days same dates', async () => {
     // Set form values
-    Object.assign(wrapper.vm.form, {
+    Object.assign(form, {
       lastBalDate: '2025-01-01',
       lastBalSession: 'am',
       leaveStartDate: '2025-01-01',
@@ -84,7 +86,7 @@ describe('Calculator', () => {
 
   test('earning days from pm to next date am', async () => {
     // Set form values
-    Object.assign(wrapper.vm.form, {
+    Object.assign(form, {
       lastBalDate: '2025-01-01',
       lastBalSession: 'pm',
       leaveStartDate: '2025-01-01',
@@ -101,7 +103,7 @@ describe('Calculator', () => {
   })
 
   test('form reset test', async () => {
-    Object.assign(wrapper.vm.form, {
+    Object.assign(form, {
       termType: 'New',
       pensionType: 'NA',
       earningRate: 14,
@@ -117,7 +119,7 @@ describe('Calculator', () => {
     })
 
     // Ensure the values were set on the form
-    expect(wrapper.vm.form).toMatchObject({
+    expect(form).toMatchObject({
       termType: 'New',
       pensionType: 'NA',
       earningRate: 14,
@@ -135,24 +137,24 @@ describe('Calculator', () => {
     await resetBtn.trigger('click')
 
     // Ensure the values were set on the form
-    expect(wrapper.vm.form).toMatchObject({
-      termType: 'New',   // <-- should not be reset
-      pensionType: 'NA', // <-- should not be reset
-      earningRate: 14,   // <-- should not be reset
+    expect(form).toMatchObject({
       accuLimit: 28,     // <-- should not be reset
+      daysTaken: 0,
+      earningRate: 14,   // <-- should not be reset
       lastBal: 0,
       lastBalDate: null,
       lastBalSession: null,
-      leaveStartDate: null,
-      leaveStartSession: null,
-      daysTaken: 0,
       leaveResumeDate: null,
       leaveResumeSession: null,
+      leaveStartDate: null,
+      leaveStartSession: null,
+      pensionType: 'NA', // <-- should not be reset
+      termType: 'New',   // <-- should not be reset
     })
   })
 
   test('continue button test', async () => {
-    Object.assign(wrapper.vm.form, {
+    Object.assign(form, {
       termType: 'New',
       pensionType: 'NA',
       earningRate: 14,
@@ -169,32 +171,35 @@ describe('Calculator', () => {
     await submitBtn.trigger('click')
     await nextTick()
 
-    const lastBal = wrapper.vm.form.closingBal
-    const lastBalDate = wrapper.vm.form.leaveResumeDate
-    const lastBalSession = wrapper.vm.form.leaveResumeSession
+    const lastBal = form.closingBal
+    const lastBalDate = form.leaveResumeDate
+    const lastBalSession = form.leaveResumeSession
     await continueBtn.trigger('click')
     await nextTick()
 
-    expect(wrapper.vm.form.lastBal).toBeCloseTo(lastBal, 0.001)
-    expect(wrapper.vm.form.lastBalDate).toBe(lastBalDate)
-    expect(wrapper.vm.form.lastBalSession).toBe(lastBalSession)
+    expect(form.lastBal).toBeCloseTo(lastBal, 0.001)
+    expect(form.lastBalDate).toBe(lastBalDate)
+    expect(form.lastBalSession).toBe(lastBalSession)
   })
 
-  describe('earning calculation test cases', async () => {
+  describe('Earning calculator muplitple test cases', async () => {
     // Set form values
     testCases.forEach(async (t) => {
       it(`Test Case ${t.caseNo}: ${t.caseDesc}`, async () => {
         //NOTE: Somehow Object.assign() no longer works #LESSONLEARNED
         //Object.assign(wrapper.vm.form, t.input)
-        wrapper.vm.form = { ...t.input }
+        //form = { ...t.input } //NOTE: It doesn't work in pinia
+        Object.assign(form, { ...t.input })
         await nextTick()
 
         await submitBtn.trigger('click')
         await nextTick()
 
-        expect(wrapper.vm.form.openingBal)
+        //console.log(`Test Case ${t.caseNo}: ${t.caseDesc}`, form)
+
+        expect(form.openingBal)
          .toBeCloseTo(t.expected.openingBal, t.expected.tolerance)
-        expect(wrapper.vm.form.closingBal)
+        expect(form.closingBal)
          .toBeCloseTo(t.expected.closingBal, t.expected.tolerance)
       })
 

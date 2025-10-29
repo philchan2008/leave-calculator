@@ -167,6 +167,7 @@
                 style="width: 120px"
                 variant="outlined"
                 @click="continueFrom"
+                :disabled="!isResultReady"
               >
                 Continue
               </v-btn>
@@ -191,33 +192,26 @@
 <script setup>
 import { computed, ref, watch } from 'vue'
 import { formatToNumeric10_2 } from '../utils/leaveUtils'
-import { useDialogStore } from '../../stores/useDialogStore';
+import { useDialogStore } from '../../stores/useDialogStore'
+import { useFormStore } from '/stores/formStore';
 
-const dialog = useDialogStore();
 
-const rules = {
-  required: (v) => !!v || 'This field is required',
-}
-
-const formRef = ref()
-const isFormValid = ref(false)
-
-const form = ref({
-  termType: null,
-  pensionType: null,
-  earningRate: 0,
-  accuLimit: 0,
-  lastBal: 0,
-  lastBalDate: null,
-  lastBalSession: null,
-  openingBal: 0,
-  closingBal: 0,
-  leaveStartDate: null,
-  leaveResumeDate: null,
-  daysTaken: 0,
-  leaveStartSession: null,
-  leaveResumeSession: null
-})
+// const form = ref({
+//   termType: null,
+//   pensionType: null,
+//   earningRate: 0,
+//   accuLimit: 0,
+//   lastBal: 0,
+//   lastBalDate: null,
+//   lastBalSession: null,
+//   openingBal: 0,
+//   closingBal: 0,
+//   leaveStartDate: null,
+//   leaveResumeDate: null,
+//   daysTaken: 0,
+//   leaveStartSession: null,
+//   leaveResumeSession: null
+// })
 
 // const form = ref({
 //   termType: "New",
@@ -236,21 +230,67 @@ const form = ref({
 //   leaveResumeSession: "pm"
 // })
 
+const form = useFormStore()
+
+const dialog = useDialogStore();
+
+const rules = {
+  required: (v) => !!v || 'This field is required',
+}
+
+const formRef = ref()
+const isFormValid = ref(false)
+
+// const isFormComplete = computed(() => {
+//   return Object.values(form.value).every(val => {
+//     // Accept 0 as valid, reject null, undefined, and empty string
+//     return val !== null && val !== undefined && val !== '';
+//   });
+// });
+
 const isFormComplete = computed(() => {
-  return Object.values(form.value).every(val => {
+  if (!form) {
+    return false; // Safely handle case where form data might not be loaded yet
+  }
+
+  // Check if every value in the form is valid
+  return Object.values(form).every(val => {
+    // Accept 0 as valid, reject null, undefined, and empty string
+    return val !== null && val !== undefined && val !== '';
+  });
+});
+
+
+//TODO: Complete the checking logic after having the result
+const isResultReady = computed(() => {
+  if (!form) {
+    return false; // Safely handle case where form data might not be loaded yet
+  }
+
+  // Check if every value in the form is valid
+  return Object.values(form).map(field => {
+    return {
+      leaveResumeDate: field?.leaveResumeDate,
+      leaveResumeSession: field?.leaveResumeSession,
+      leaveStartDate: field?.leaveStartDate,
+      leaveStartSession: field?.leaveStartSession,
+      openingBal: field?.openingBal,
+      closingBal: field?.closingBal
+    }
+  }).every(val => {
     // Accept 0 as valid, reject null, undefined, and empty string
     return val !== null && val !== undefined && val !== '';
   });
 });
 
 const earningDaysBeforeLeave = computed(() => {
-  if (!form.value.lastBalDate || !form.value.lastBalSession
-    || !form.value.leaveStartDate || !form.value.leaveStartSession
+  if (!form.lastBalDate || !form.lastBalSession
+    || !form.leaveStartDate || !form.leaveStartSession
   ) return 0
-  const startSess = form.value.lastBalSession
-  const endSess = form.value.leaveStartSession
-  const start = new Date(form.value.lastBalDate)
-  const end = new Date(form.value.leaveStartDate)
+  const startSess = form.lastBalSession
+  const endSess = form.leaveStartSession
+  const start = new Date(form.lastBalDate)
+  const end = new Date(form.leaveStartDate)
   const daysDiff = Math.ceil( (end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24))
   const earningDays = daysDiff +
     ((startSess == 'am' && endSess == 'pm') ? 0.5 : 0) +
@@ -259,13 +299,13 @@ const earningDaysBeforeLeave = computed(() => {
 })
 
 const earningDays = computed(() => {
-  if (!form.value.leaveStartDate || !form.value.leaveStartSession
-    || !form.value.leaveResumeDate || !form.value.leaveResumeSession
+  if (!form.leaveStartDate || !form.leaveStartSession
+    || !form.leaveResumeDate || !form.leaveResumeSession
   ) return 0
-  const startSess = form.value.leaveStartSession
-  const endSess = form.value.leaveResumeSession
-  const start = new Date(form.value.leaveStartDate)
-  const end = new Date(form.value.leaveResumeDate)
+  const startSess = form.leaveStartSession
+  const endSess = form.leaveResumeSession
+  const start = new Date(form.leaveStartDate)
+  const end = new Date(form.leaveResumeDate)
   const daysDiff = Math.ceil( (end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24))
   const earningDays = daysDiff +
     ((startSess == 'am' && endSess == 'pm') ? 0.5 : 0) +
@@ -283,6 +323,7 @@ const earningRateContract = [28, 14]
 const earningLimitContract = { 28: 28, 14: 14 }
 
 const earningLimitOptions = computed(() => {
+  //TODO: to be filtered by lookup API in future, currently list all to let user select
   const allValues = [
     ...Object.values(earningLimitNew),
     ...Object.values(earningLimitCommon),
@@ -321,7 +362,7 @@ const earningLimitOptions = computed(() => {
 })
 
 const earningRateOptions = computed(() => {
-  switch (form.value.termType) {
+  switch (form.termType) {
     case 'New':
       return earningRateNew
     case 'Common':
@@ -336,12 +377,12 @@ const earningRateOptions = computed(() => {
 })
 
 function resetFields(expectFields) {
-  for (const key in form.value) {
+  for (const key in form) {
     if (!expectFields.includes(key)) {
-      if (typeof form.value[key] === 'number') {
-        form.value[key] = 0
+      if (typeof form[key] === 'number') {
+        form[key] = 0
       } else {
-        form.value[key] = null
+        form[key] = null
       }
     }
   }
@@ -351,24 +392,23 @@ function resetForm() {
   resetFields(["termType","pensionType","earningRate","accuLimit"])
 }
 
-
 function submitFrom() {
   const { lastBal, earningRate, daysTaken
-  } = form.value
+  } = form
   const earnedLeaveBeforeLeave = earningDaysBeforeLeave.value * earningRate / 365
-  form.value.openingBal = Math.min(formatToNumeric10_2(lastBal + earnedLeaveBeforeLeave), form.value.accuLimit)
+  form.openingBal = Math.min(formatToNumeric10_2(lastBal + earnedLeaveBeforeLeave), form.accuLimit)
   const earnedLeave = earningDays.value * earningRate / 365
-  form.value.closingBal = Math.min(formatToNumeric10_2(form.value.openingBal - daysTaken + earnedLeave), form.value.accuLimit)
+  form.closingBal = Math.min(formatToNumeric10_2(form.openingBal - daysTaken + earnedLeave), form.accuLimit)
 }
 
 function continueFrom() {
-  const lastBal = form.value.closingBal
-  const lastBalDate = form.value.leaveResumeDate
-  const lastBalSession = form.value.leaveResumeSession
+  const lastBal = form.closingBal
+  const lastBalDate = form.leaveResumeDate
+  const lastBalSession = form.leaveResumeSession
   resetFields(["termType", "pensionType", "earningRate", "accuLimit"])
-  form.value.lastBal = lastBal
-  form.value.lastBalDate = lastBalDate
-  form.value.lastBalSession = lastBalSession
+  form.lastBal = lastBal
+  form.lastBalDate = lastBalDate
+  form.lastBalSession = lastBalSession
 }
 
 function validateLeaveDates() {
@@ -376,7 +416,7 @@ function validateLeaveDates() {
     lastBalDate, lastBalSession,
     leaveStartDate, leaveStartSession,
     leaveResumeDate, leaveResumeSession,
-  } = form.value
+  } = form
 
   if (!leaveStartDate || !leaveStartSession
     || !leaveResumeDate || !leaveResumeSession
@@ -414,10 +454,11 @@ function validateLeaveDates() {
   return true
 }
 
-watch(() => form.value.daysTaken, (val) => {
+// Rounding the value to min 0.5 day unit
+watch(() => form.daysTaken, (val) => {
   const rounded = Math.round(val * 2) / 2;
   if (val !== rounded) {
-    form.value.daysTaken = rounded;
+    form.daysTaken = rounded;
   }
 })
 
