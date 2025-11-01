@@ -88,42 +88,42 @@
             />
           </v-col>
         </v-row>
+        <v-row>
+          <div class="mx-auto">
+            <v-btn-group>
+              <v-btn id="btn-apply-dayscount" color="green" @click="useDaysCountAsDaysTaken">Use Days Count</v-btn>
+              <v-btn id="btn-apply-dutydays" color="blue" @click="useDutyDaysAsDaysTaken">Use Duty Days</v-btn>
+            </v-btn-group>
+          </div>
+        </v-row>
       </v-container>
     </v-form>
   </v-container>
 </template>
 
 <script setup>
-import { computed, ref, watch, watchEffect, reactive } from 'vue'
+import { ref, watchEffect } from 'vue'
 import { useDialogStore } from '../../stores/useDialogStore'
 import { getHolidays } from '../utils/leaveUtils'
 import { useDayDiffStore } from '/stores/daysCalcStore'
+import { useFormStore } from '/stores/formStore'
+import { useRouter } from 'vue-router'
 
 const dialog = useDialogStore()
+const calcFrom = useFormStore()
+const form = useDayDiffStore()
+const router = useRouter()
+
+const formRef = ref()
+const isFormValid = ref(false)
+const today = new Date().toISOString().split('T')[0]
 
 const rules = {
   required: (v) => !!v || 'This field is required',
 }
 
-const formRef = ref()
-const isFormValid = ref(false)
-
-const today = new Date().toISOString().split('T')[0]
-
-const form = useDayDiffStore()
-
 if (!form.leaveStartDate) form.leaveStartDate = today
 if (!form.leaveEndDate) form.leaveEndDate = today
-
-// const form = reactive({
-//   leaveStartDate: today,
-//   leaveStartSession: "am",
-//   leaveEndDate: today,
-//   leaveEndSession: "am",
-//   daysCount: 0,
-//   daysOfHolidays: 0,
-//   daysTaken: 0,
-// })
 
 function validateLeaveDates() {
   const {
@@ -187,7 +187,7 @@ async function calculateLeaveDetails(formData) {
   const holidays = await getHolidays()
   for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
     const day = d.getDay()
-    const dateStr = d.toISOString().split('T')[0].replaceAll("-","")
+    const dateStr = d.toISOString().split('T')[0]
     const isWeekend = (day === 0 || day === 6)
     const isCustomHoliday = holidays.some(range =>
       dateStr >= range.dtstart && dateStr <= range.dtend
@@ -195,7 +195,7 @@ async function calculateLeaveDetails(formData) {
     if (isWeekend || isCustomHoliday) {
       countOfHolidays++
     }
-    //console.log(`Date: ${d}, isWeekend: ${isWeekend}, isCustomHoliday: ${isCustomHoliday}`)
+    console.log(`Date: ${d}, isWeekend: ${isWeekend}, isCustomHoliday: ${isCustomHoliday}`)
   }
 
   if (countOfHolidays > countOfDays) {
@@ -205,6 +205,23 @@ async function calculateLeaveDetails(formData) {
   formData.daysCount = countOfDays
   formData.daysOfHolidays = countOfHolidays
   formData.daysTaken = countOfDays - countOfHolidays
+}
+
+function appyDaysToCalculator(days) {
+  calcFrom.daysTaken = days
+  calcFrom.leaveStartDate = form.leaveStartDate
+  calcFrom.leaveStartSession = form.leaveStartSession
+  calcFrom.leaveResumeDate = form.leaveEndDate
+  calcFrom.leaveResumeSession = form.leaveEndSession
+  router.push('/calc')
+}
+
+function useDaysCountAsDaysTaken() {
+  appyDaysToCalculator(form.daysCount)
+}
+
+function useDutyDaysAsDaysTaken() {
+  appyDaysToCalculator(form.daysTaken)
 }
 
 watchEffect(async () => {

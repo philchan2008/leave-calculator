@@ -1,4 +1,5 @@
 import { defineStore } from 'pinia'
+import { useFormStore } from './formStore'
 
 export const useDayDiffStore = defineStore('form', {
   state: () => ({
@@ -9,5 +10,6 @@ export const useDayDiffStore = defineStore('form', {
     daysCount: 0,
     daysOfHolidays: 0,
     daysTaken: 0,
+    useType: null,
   })
 })

@@ -18,13 +18,13 @@
     >
       <template #item.dtstart="{ item }">
         <div style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
-          {{ formatDate(item.dtstart[0]) }}
+          {{ item.dtstart }}
         </div>
       </template>
 
       <template #item.dtend="{ item }">
         <div style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
-          {{ formatDate(item.dtend[0]) }}
+          {{ item.dtend }}
         </div>
       </template>
     </v-data-table>
@@ -32,24 +32,10 @@
 </template>
 
 <script setup>
-import axios from 'axios';
-import { ref, onMounted, computed } from 'vue';
+import { ref, onMounted } from 'vue';
 import { getHolidays } from '@/utils/leaveUtils';
 
 const holidays = ref([]);
-
-function parseDate(yyyymmdd) {
-  const year = yyyymmdd.slice(0, 4);
-  const month = yyyymmdd.slice(4, 6);
-  const day = yyyymmdd.slice(6, 8);
-  return new Date(`${year}-${month}-${day}`);
-}
-
-function formatDate(yyyymmdd) {
-  const date = parseDate(yyyymmdd);
-  return date.toDateString(); // e.g. "01/01/2024" or "1 January 2024"
-}
-
 const search = ref('')
 const headers = [
   {
@@ -62,7 +48,6 @@ const headers = [
 
 onMounted(async () => {
   holidays.value = await getHolidays()
-  console.log(holidays.value)
 })
 
 </script>

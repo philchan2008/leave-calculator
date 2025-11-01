@@ -1,16 +1,6 @@
 // leaveUtils.js
 import axios from 'axios'
 
-export function calcDayDiff(startDate, startSession, endDate, endSession) {
-  const dayDiff = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24)) +
-    ((startSession === 'am' && endSession === 'pm') ? 0.5 : 0)
-  return dayDiff
-}
-
-export function formatLeaveDate(date) {
-  return new Date(date).toLocaleDateString();
-}
-
 export function formatToNumeric10_2(value) {
   const num = Number.parseFloat(value)
   if (Number.isNaN(num)) return null
@@ -20,14 +10,36 @@ export function formatToNumeric10_2(value) {
   return `${intPart}.${decPart}`
 }
 
+export function calcDayDiff(startDate, startSession, endDate, endSession) {
+  const dayDiff = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24)) +
+    ((startSession === 'am' && endSession === 'pm') ? 0.5 : 0)
+  return dayDiff
+}
+
+export function parseYYYYMMDD(dateStr) {
+  const year = parseInt(dateStr.slice(0, 4), 10)
+  const month = parseInt(dateStr.slice(4, 6), 10) - 1 // Month is 0-based
+  const day = parseInt(dateStr.slice(6, 8), 10)
+  const newDate = new Date(year, month, day)
+  return newDate
+}
+
+export function formatLeaveDate(ymdDate) {
+  //return new Date(date).toLocaleDateString();
+  let newDate = null
+  newDate = parseYYYYMMDD(ymdDate)
+  newDate = newDate.toISOString().slice(0, 10) // "YYYY-MM-DD"
+  return newDate
+}
+
 export async function getHolidays() {
   let holidays = []
   await axios.get("http://localhost:3001/holidays")
     .then(res => {
       const vevents = res.data.vcalendar?.[0]?.vevent || []
       holidays = vevents.map(h => ({
-        dtstart: h.dtstart,
-        dtend: h.dtend,
+        dtstart: formatLeaveDate(h.dtstart[0]),
+        dtend: formatLeaveDate(h.dtend[0]),
         summary: h.summary
       }))
       /**

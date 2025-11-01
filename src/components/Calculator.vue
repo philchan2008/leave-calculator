@@ -84,7 +84,8 @@
             label="Start Date"
             max-width="368"
             :rules="[rules.required, validateLeaveDates]"
-          />
+          >
+          </v-date-input>
           <v-select
             v-model="form.leaveStartSession"
             :items="['am', 'pm']"
@@ -190,11 +191,11 @@
 </template>
 
 <script setup>
-import { computed, ref, watch } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { formatToNumeric10_2 } from '../utils/leaveUtils'
 import { useDialogStore } from '../../stores/useDialogStore'
-import { useFormStore } from '/stores/formStore';
-
+import { useFormStore } from '/stores/formStore'
+import { getHolidays } from '@/utils/leaveUtils';
 
 // const form = ref({
 //   termType: null,
@@ -453,6 +454,34 @@ function validateLeaveDates() {
 
   return true
 }
+
+const holidayAttributes = ref([])
+
+onMounted(async () => {
+  const cached = localStorage.getItem('holidays')
+  if (cached) {
+    holidayAttributes.value = JSON.parse(cached)
+  } else {
+    const holidays = [] //await getHolidays()
+    const attrs = holidays.map(h => ({
+      key: 'holiday',
+      dates: h.dtstart[0], // Convert "Mon Jan 01 2024" to "2024-01-01"
+      highlight: {
+        color: 'red',
+        fillMode: 'solid'
+      },
+      contentStyle: {
+        color: 'white'
+      },
+      popover: {
+        label: h.summary
+      }
+    }))
+    holidayAttributes.value = attrs
+    localStorage.setItem('holidays', JSON.stringify(attrs))
+  }
+})
+
 
 // Rounding the value to min 0.5 day unit
 watch(() => form.daysTaken, (val) => {

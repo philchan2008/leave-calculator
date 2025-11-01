@@ -16,13 +16,11 @@
               This leave calculator helps you estimate your remaining leave days based on your employment terms,
               earning rate, and last balance. Built with Vue 3.5, Vite, and Vuetify for a fast and responsive experience.
             </p>
-            <p>
-              Features include:
-              <ul>
-                <li>Dynamic form inputs</li>
-                <li>PDF export of leave summary (To be implemented.)</li>
-              </ul>
-            </p>
+            <p>Features include:</p>
+            <ul>
+              <li>Dynamic form inputs</li>
+              <li>PDF export of leave summary (To be implemented.)</li>
+            </ul>
           </v-card-text>
         </v-card>
       </v-col>
